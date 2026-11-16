@@ -1,5 +1,6 @@
 package com.example.nexthire.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,18 +12,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.nexthire.ui.theme.nextHireBackground
@@ -30,23 +35,63 @@ import com.example.nexthire.ui.theme.nextHireBackground
 private data class SampleJob(
     val title: String,
     val company: String,
-    val location: String
+    val location: String,
+    val description: String
 )
 
 private val sampleJobs = listOf(
-    SampleJob("Junior Data Analyst", "Northbridge Data", "Middlesbrough"),
-    SampleJob("Android Developer Intern", "Cedar Mobile", "Newcastle"),
-    SampleJob("Graduate Software Tester", "Harbour Software", "Remote")
+    SampleJob(
+        title = "Junior Data Analyst",
+        company = "Northbridge Data",
+        location = "Middlesbrough",
+        description = "Use Excel and SQL to check data, build reports and help teams understand their results."
+    ),
+    SampleJob(
+        title = "Android Developer Intern",
+        company = "Cedar Mobile",
+        location = "Newcastle",
+        description = "Build Android screens with Kotlin and Jetpack Compose, fix bugs and test new features."
+    ),
+    SampleJob(
+        title = "Graduate Software Tester",
+        company = "Harbour Software",
+        location = "Remote",
+        description = "Write test cases, check new features and report bugs with clear steps to reproduce them."
+    )
 )
 
 @Composable
 fun HomeScreen() {
     var searchText by remember { mutableStateOf("") }
+    var selectedJob by remember { mutableStateOf<SampleJob?>(null) }
+
+    val focusManager = LocalFocusManager.current
+    val jobToShow = selectedJob
+
+    BackHandler(enabled = jobToShow != null) {
+        selectedJob = null
+    }
+
+    if (jobToShow != null) {
+        JobDetailsScreen(
+            job = jobToShow,
+            onBack = { selectedJob = null }
+        )
+        return
+    }
+
     val query = searchText.trim()
     val matchingJobs = sampleJobs.filter { job ->
         query.isEmpty() ||
                 job.title.contains(query, ignoreCase = true) ||
                 job.location.contains(query, ignoreCase = true)
+    }
+
+    val resultsLabel = when {
+        query.isEmpty() -> "${sampleJobs.size} sample jobs"
+        matchingJobs.size == 1 -> "1 matching job"
+        matchingJobs.isNotEmpty() -> "${matchingJobs.size} matching jobs"
+        else -> null
     }
 
     val colours = MaterialTheme.colorScheme
@@ -74,11 +119,34 @@ fun HomeScreen() {
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Search by title or location") },
             singleLine = true,
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            trailingIcon = {
+                if (searchText.isNotEmpty()) {
+                    TextButton(
+                        onClick = {
+                            searchText = ""
+                            focusManager.clearFocus()
+                        }
+                    ) {
+                        Text("Clear")
+                    }
+                }
+            }
         )
 
+        if (resultsLabel != null) {
+            Text(
+                text = resultsLabel,
+                modifier = Modifier.padding(top = 12.dp),
+                style = typography.bodyMedium,
+                color = colours.onSurfaceVariant
+            )
+        }
+
         LazyColumn(
-            modifier = Modifier.weight(1f).fillMaxWidth(),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
             contentPadding = PaddingValues(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -94,6 +162,10 @@ fun HomeScreen() {
 
             items(matchingJobs) { job ->
                 Card(
+                    onClick = {
+                        focusManager.clearFocus()
+                        selectedJob = job
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
@@ -112,7 +184,10 @@ fun HomeScreen() {
                             fontWeight = FontWeight.SemiBold,
                             color = colours.primary
                         )
-                        Text(job.company, style = typography.bodyMedium)
+                        Text(
+                            text = job.company,
+                            style = typography.bodyMedium
+                        )
                         Text(
                             text = job.location,
                             style = typography.bodySmall,
@@ -120,6 +195,65 @@ fun HomeScreen() {
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun JobDetailsScreen(
+    job: SampleJob,
+    onBack: () -> Unit
+) {
+    val colours = MaterialTheme.colorScheme
+    val typography = MaterialTheme.typography
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(nextHireBackground())
+            .safeDrawingPadding()
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        TextButton(onClick = onBack) {
+            Text("Back to jobs")
+        }
+
+        Text(
+            text = job.title,
+            style = typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = colours.onBackground
+        )
+
+        Text(
+            text = "${job.company} · ${job.location}",
+            style = typography.bodyLarge,
+            color = colours.onSurfaceVariant
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = colours.surface,
+                contentColor = colours.onSurface
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "About the role",
+                    style = typography.titleMedium
+                )
+                Text(
+                    text = job.description,
+                    style = typography.bodyLarge
+                )
             }
         }
     }
