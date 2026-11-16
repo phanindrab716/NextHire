@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 val NextHireNavy = Color(0xFF102A43)
@@ -15,7 +16,7 @@ private val LightColors = lightColorScheme(
     onPrimary = Color.White,
     primaryContainer = Color(0xFFCCFBF1),
     onPrimaryContainer = Color(0xFF003B33),
-    background = Color(0xFFF4F7FA),
+    background = Color(0xFFF4F8FC),
     onBackground = NextHireNavy,
     surface = Color.White,
     onSurface = NextHireNavy,
@@ -35,6 +36,31 @@ private val DarkColors = darkColorScheme(
     onSurfaceVariant = Color(0xFFB1C2D4),
     outlineVariant = Color(0xFF34485D)
 )
+
+private val LightBackground = Brush.verticalGradient(
+    colors = listOf(
+        Color(0xFFE0F5F1),
+        Color(0xFFF4F8FC),
+        Color(0xFFECF2FA)
+    )
+)
+
+private val DarkBackground = Brush.verticalGradient(
+    colors = listOf(
+        Color(0xFF123435),
+        Color(0xFF102033),
+        Color(0xFF0D1826)
+    )
+)
+
+@Composable
+fun nextHireBackground(): Brush {
+    return if (MaterialTheme.colorScheme.background == DarkColors.background) {
+        DarkBackground
+    } else {
+        LightBackground
+    }
+}
 
 @Composable
 fun NextHireTheme(
